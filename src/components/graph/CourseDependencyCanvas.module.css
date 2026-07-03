@@ -1,0 +1,315 @@
+.canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  overflow: hidden;
+  color: #16202a;
+  background:
+    linear-gradient(#d7e0ea 1px, transparent 1px),
+    linear-gradient(90deg, #d7e0ea 1px, transparent 1px),
+    #f4f7fb;
+  background-position:
+    var(--grid-x, 0) var(--grid-y, 0),
+    var(--grid-x, 0) var(--grid-y, 0),
+    0 0;
+  background-size:
+    var(--grid-size, 32px) var(--grid-size, 32px),
+    var(--grid-size, 32px) var(--grid-size, 32px),
+    auto;
+  border: 0;
+  border-radius: 0;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.panning {
+  cursor: grabbing;
+}
+
+.readOnly {
+  cursor: default;
+}
+
+.viewport {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+}
+
+.edges {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.box {
+  position: absolute;
+  z-index: 0;
+  pointer-events: auto;
+  background: rgb(255 255 255 / 48%);
+  border: 2px solid rgb(37 99 235 / 46%);
+  border-radius: 18px;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 70%);
+}
+
+.selectedBox {
+  outline: 3px solid rgb(37 99 235 / 24%);
+  outline-offset: 3px;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 78%),
+    0 12px 28px rgb(37 99 235 / 12%);
+}
+
+.boxTitle {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  max-width: calc(100% - 28px);
+  overflow: hidden;
+  color: #334155;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.boxResizeHandle {
+  position: absolute;
+  z-index: 3;
+  background: #ffffff;
+  border: 1px solid #2563eb;
+  box-shadow: 0 2px 8px rgb(15 23 42 / 18%);
+  pointer-events: auto;
+}
+
+.resizeN,
+.resizeS {
+  left: 18px;
+  width: calc(100% - 36px);
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.resizeN {
+  top: -5px;
+}
+
+.resizeS {
+  bottom: -5px;
+}
+
+.resizeE,
+.resizeW {
+  top: 18px;
+  width: 8px;
+  height: calc(100% - 36px);
+  cursor: ew-resize;
+}
+
+.resizeE {
+  right: -5px;
+}
+
+.resizeW {
+  left: -5px;
+}
+
+.resizeNe,
+.resizeNw,
+.resizeSe,
+.resizeSw {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+}
+
+.resizeNe {
+  top: -7px;
+  right: -7px;
+  cursor: nesw-resize;
+}
+
+.resizeNw {
+  top: -7px;
+  left: -7px;
+  cursor: nwse-resize;
+}
+
+.resizeSe {
+  right: -7px;
+  bottom: -7px;
+  cursor: nwse-resize;
+}
+
+.resizeSw {
+  bottom: -7px;
+  left: -7px;
+  cursor: nesw-resize;
+}
+
+.edgePath {
+  fill: none;
+  stroke: #536575;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.edgePathHighlighted {
+  stroke-width: 4;
+  filter: drop-shadow(0 3px 5px rgb(15 23 42 / 18%));
+}
+
+.edgePathIncoming {
+  stroke: #2563eb;
+}
+
+.edgePathOutgoing {
+  stroke: #059669;
+}
+
+.edgePathBoth {
+  stroke: #7c3aed;
+}
+
+.arrowHead {
+  fill: #1f2937;
+}
+
+.arrowHeadIncoming {
+  fill: #2563eb;
+}
+
+.arrowHeadOutgoing {
+  fill: #059669;
+}
+
+.arrowHeadBoth {
+  fill: #7c3aed;
+}
+
+.node {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 1px solid #c8d2dc;
+  border-top: 4px solid #2d7ff9;
+  border-radius: 8px;
+  box-shadow: 0 8px 22px rgb(29 46 61 / 12%);
+  cursor: grab;
+  pointer-events: auto;
+}
+
+.node:hover {
+  border-color: #8fa2b3;
+}
+
+.dragging {
+  cursor: grabbing;
+  box-shadow: 0 14px 34px rgb(29 46 61 / 18%);
+}
+
+.pathHighlighted {
+  isolation: isolate;
+  border-color: #eab308;
+  outline: 4px solid #facc15;
+  outline-offset: 5px;
+  box-shadow:
+    0 0 0 10px rgb(250 204 21 / 28%),
+    0 16px 36px rgb(202 138 4 / 28%),
+    inset 0 0 0 999px rgb(254 240 138 / 24%);
+}
+
+.pathHighlighted::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  background: rgb(254 240 138 / 45%);
+  border-radius: inherit;
+}
+
+.selected {
+  outline: 3px solid rgb(37 99 235 / 34%);
+  outline-offset: 2px;
+}
+
+.selectionBox {
+  position: fixed;
+  z-index: 20;
+  pointer-events: none;
+  background: rgb(37 99 235 / 10%);
+  border: 1px solid rgb(37 99 235 / 70%);
+}
+
+.draftBox {
+  position: fixed;
+  z-index: 21;
+  pointer-events: none;
+  background: rgb(14 165 233 / 10%);
+  border: 2px solid rgb(14 165 233 / 75%);
+  border-radius: 18px;
+}
+
+.nodeCode {
+  color: #0f2537;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.nodeTitle {
+  color: #253543;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.nodeMeta {
+  color: #667889;
+  font-size: 0.76rem;
+  line-height: 1.2;
+}
+
+.contextMenu {
+  position: fixed;
+  z-index: 30;
+  display: grid;
+  min-width: 180px;
+  padding: 6px;
+  background: #ffffff;
+  border: 1px solid #c6d0da;
+  border-radius: 8px;
+  box-shadow: 0 18px 48px rgb(18 32 44 / 22%);
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+  transform-origin: top left;
+}
+
+.contextMenu > button {
+  width: 100%;
+  padding: 8px 10px;
+  color: #172433;
+  font: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.contextMenu > button:hover,
+.contextMenu > button:focus-visible {
+  background: #edf3f8;
+  outline: none;
+}
