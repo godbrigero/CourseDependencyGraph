@@ -58,6 +58,7 @@ const COURSE_FILTER_ORDER: CourseFilterKey[] = [
   "ras",
   "physics",
   "math",
+  "other",
 ];
 
 const courseFilterTabs: Record<CourseFilterKey, { label: string }> = {
@@ -83,13 +84,34 @@ const DEFAULT_BOX_HEIGHT = 420;
 const MAX_PATH_DEPTH = 8;
 
 const DEPARTMENT_COLORS: Record<string, string> = {
+  AMSC: "#0f766e",
+  AMST: "#c2410c",
+  ANTH: "#0f766e",
+  ARTH: "#9333ea",
+  ASTR: "#4338ca",
+  BSCI: "#16a34a",
+  CCJS: "#334155",
+  CHEM: "#ea580c",
   CMSC: "#2563eb",
+  COMM: "#be185d",
+  DATA: "#0e7490",
+  ECON: "#854d0e",
+  ENGL: "#7f1d1d",
   MATH: "#059669",
+  HIST: "#92400e",
+  INAG: "#65a30d",
+  INST: "#0284c7",
+  LARC: "#4d7c0f",
+  MUSC: "#a21caf",
   PHYS: "#7c3aed",
+  PSYC: "#0369a1",
+  SOCY: "#475569",
   ENAE: "#d97706",
   ENEE: "#0891b2",
   ENES: "#be123c",
   ENME: "#dc2626",
+  STAT: "#15803d",
+  THET: "#9f1239",
 };
 
 const courseById = new Map(catalogCourses.map((course) => [course.id, course]));
@@ -594,6 +616,18 @@ export function CoursePlannerApp() {
     setSelectedBoxId(null);
   }
 
+  function exportCanvasForAi() {
+    const exportText = buildAiGraphExport({
+      boxes,
+      edges: baseGraphEdges,
+      missingByNode,
+      nodes,
+      page: activePage,
+      selectedNodeIds,
+    });
+    downloadTextFile(`${slugify(activePage.name)}-ai-graph.md`, exportText);
+  }
+
   return (
     <div className="planner-shell">
       <nav
@@ -662,6 +696,13 @@ export function CoursePlannerApp() {
         <div className="top-menu__actions" aria-label="Canvas actions">
           <button type="button" onClick={addPage} title="New canvas">
             +
+          </button>
+          <button
+            type="button"
+            onClick={exportCanvasForAi}
+            title="Export current canvas for AI models"
+          >
+            Export
           </button>
           <button
             type="button"
@@ -992,6 +1033,13 @@ function PlannerContextMenu({
               <span>
                 <strong>{course.id}</strong>
                 <small>{course.title}</small>
+                {course.genEd.length ? (
+                  <span className="gen-ed-chip-row" aria-label="Gen Ed requirements">
+                    {course.genEd.map((code) => (
+                      <span key={code}>{code}</span>
+                    ))}
+                  </span>
+                ) : null}
               </span>
               <em>
                 {course.difficulty ? `${course.difficulty}/10` : "N/A"}
@@ -1012,6 +1060,9 @@ function CourseMetrics({ course }: { course: CatalogCourse }) {
       <span>
         {course.difficulty ? `Difficulty ${course.difficulty}/10` : "No score"}
       </span>
+      {course.genEd.map((code) => (
+        <span key={code}>{code}</span>
+      ))}
     </div>
   );
 }
@@ -1248,6 +1299,145 @@ function edgeKey(edge: CourseGraphEdge, index: number) {
   return edge.id ?? `${edge.from}-${edge.to}-${index}`;
 }
 
+function buildAiGraphExport({
+  boxes,
+  edges,
+  missingByNode,
+  nodes,
+  page,
+  selectedNodeIds,
+}: {
+  boxes: PlannerBox[];
+  edges: CourseGraphEdge[];
+  missingByNode: Map<string, string[]>;
+  nodes: PlannerNode[];
+  page: PlannerPage;
+  selectedNodeIds: string[];
+}) {
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  const boxById = new Map(boxes.map((box) => [box.id, box]));
+  const prerequisitesByCourse = Object.fromEntries(
+    nodes.map((node) => [
+      node.courseId,
+      edges
+        .filter((edge) => edge.to === node.id)
+        .map((edge) => edge.from)
+        .sort(),
+    ]),
+  );
+  const dependentsByCourse = Object.fromEntries(
+    nodes.map((node) => [
+      node.courseId,
+      edges
+        .filter((edge) => edge.from === node.courseId)
+        .map((edge) => nodeById.get(edge.to)?.courseId ?? edge.to)
+        .sort(),
+    ]),
+  );
+
+  const payload = {
+    schema: "umd-course-dependency-graph.v1",
+    intent:
+      "A course planning graph. Each edge points from prerequisite course to dependent course.",
+    exportedAt: new Date().toISOString(),
+    canvas: {
+      id: page.id,
+      name: page.name,
+      selectedCourseIds: selectedNodeIds
+        .map((nodeId) => nodeById.get(nodeId)?.courseId)
+        .filter(Boolean),
+    },
+    boxes: boxes.map((box) => ({
+      id: box.id,
+      title: box.title ?? "Box",
+      position: { x: box.x, y: box.y },
+      size: { width: box.width, height: box.height },
+    })),
+    courses: nodes
+      .map((node) => {
+        const environmentId = getNodeEnvironment(node, boxes);
+        const environmentBox = environmentId ? boxById.get(environmentId) : null;
+        const catalogCourse = courseById.get(node.courseId);
+
+        return {
+          id: node.courseId,
+          code: node.code,
+          title: node.title,
+          department: node.department,
+          credits: node.credits ?? null,
+          averageGpa: node.averageGpa,
+          difficulty: node.difficulty,
+          genEd: catalogCourse?.genEd ?? [],
+          tags: node.tags ?? [],
+          description: node.description ?? "",
+          rawPrerequisites: node.rawPrerequisites,
+          rawCorequisites: node.rawCorequisites,
+          missingPrerequisites: missingByNode.get(node.id) ?? [],
+          environment: environmentBox
+            ? {
+                type: "box",
+                id: environmentBox.id,
+                title: environmentBox.title ?? "Box",
+              }
+            : { type: "outside", id: null, title: "Outside all boxes" },
+          position: { x: node.x, y: node.y },
+          size: {
+            width: node.width ?? DEFAULT_NODE_WIDTH,
+            height: node.height ?? DEFAULT_NODE_HEIGHT,
+          },
+        };
+      })
+      .sort((a, b) => a.id.localeCompare(b.id)),
+    prerequisiteEdges: edges
+      .map((edge) => ({
+        from: edge.from,
+        to: nodeById.get(edge.to)?.courseId ?? edge.to,
+        meaning: `${edge.from} is a prerequisite or corequisite for ${
+          nodeById.get(edge.to)?.courseId ?? edge.to
+        }`,
+        label: edge.label ?? "prerequisite",
+      }))
+      .sort((a, b) => a.from.localeCompare(b.from) || a.to.localeCompare(b.to)),
+    adjacency: {
+      prerequisitesByCourse,
+      dependentsByCourse,
+    },
+  };
+
+  return [
+    "# UMD Course Graph AI Export",
+    "",
+    "This export is designed for AI models. Interpret `prerequisiteEdges` as directed edges where `from` must be taken before or with `to`, depending on the source prerequisite/corequisite text. Boxes are local environments; dependencies are scoped within the same box or outside region.",
+    "",
+    "```json",
+    JSON.stringify(payload, null, 2),
+    "```",
+    "",
+  ].join("\n");
+}
+
+function downloadTextFile(filename: string, content: string) {
+  const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function slugify(value: string) {
+  return (
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "canvas"
+  );
+}
+
 function arraysEqual(first: string[], second: string[]) {
   return (
     first.length === second.length &&
@@ -1371,10 +1561,13 @@ function searchRank(course: CatalogCourse, query: string) {
   const id = course.id.toLowerCase();
   const title = course.title.toLowerCase();
   const description = course.description.toLowerCase();
+  const genEd = course.genEd.join(" ").toLowerCase();
 
   if (id === query) return 0;
   if (id.startsWith(query)) return 1;
+  if (genEd.split(" ").includes(query)) return 2;
   if (title.includes(query)) return 2;
+  if (genEd.includes(query)) return 3;
   if (description.includes(query)) return 3;
   return Number.POSITIVE_INFINITY;
 }

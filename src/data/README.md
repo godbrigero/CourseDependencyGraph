@@ -2,14 +2,17 @@
 
 This directory seeds course graph data from the public University of Maryland
 2026-2027 Undergraduate Catalog. It is intentionally curated around the
-Computer Science major, Mathematics major, Physics major, and Robotics and
-Autonomous Systems minor instead of mirroring the full registrar catalog.
+Computer Science major, Mathematics major, Physics major, Robotics and
+Autonomous Systems minor, and a curated "Other" group of representative
+General Education courses instead of mirroring the full registrar catalog.
 
 Sources used:
 
-- UMD catalog course pages for CMSC, MATH, PHYS, STAT, ENAE, ENEE, ENES, and ENME.
+- UMD catalog course pages for the seeded major/minor departments and selected
+  General Education departments.
 - UMD catalog program pages for Computer Science Major, Mathematics Major,
   Physics Major, and Robotics and Autonomous Systems Minor.
+- UMD Testudo General Education pages for current Gen Ed requirement codes.
 
 Notes:
 
@@ -24,4 +27,3 @@ Notes:
   row in the catalog requirements table, but no current ENME476 course block was
   found in the department course page during seeding. It is documented in the
   minor notes rather than represented as a normalized course.
-

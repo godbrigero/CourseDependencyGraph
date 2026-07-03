@@ -423,6 +423,27 @@ button:disabled {
   line-height: 1.25;
 }
 
+.gen-ed-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 5px;
+}
+
+.gen-ed-chip-row span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 2px 5px;
+  color: #334155;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+}
+
 .course-menu__list em {
   flex: 0 0 auto;
   color: var(--accent);
